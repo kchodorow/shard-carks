@@ -22,10 +22,10 @@ if (!isset($_SESSION['strategy'])) {
   if (!isset($_POST['strategy']) || $_POST['strategy'] == "asc") {
     $_SESSION['strategy'] = new Ascending();
   }
-  else if ($_GET['strategy'] == "rand") {
+  else if ($_POST['strategy'] == "rand") {
     $_SESSION['strategy'] = new Random();
   }
-  else if ($_GET['strategy'] == "combo") {
+  else if ($_POST['strategy'] == "combo") {
     $_SESSION['strategy'] = new CoarseAscendingCombo();
   }
 }
@@ -46,6 +46,7 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
 <html>
  <title>Sharding Game</title>
  <body>
+  <h2>Current strategy: <?php echo $strategy->__toString(); ?></h2>
   <form method="post">
    <input type="submit" value="Next Move"/>
   </form>

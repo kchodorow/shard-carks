@@ -64,8 +64,9 @@ abstract class Strategy {
     }
   }
 
-  abstract public function getChunk();
+  abstract public function getChunk($move);
   abstract public function addCard($move);
+  abstract public function __toString();
 }
 
 class Card {
@@ -118,19 +119,23 @@ class Chunk {
 
 class Ascending extends Strategy {
   
-  public function getChunk() {
+  public function getChunk($move) {
     $len = count($this->chunks);
     return $this->chunks[$len-1];
   }
 
   public function addCard($move) {
-    $chunk = $this->getChunk();
+    $chunk = $this->getChunk($move);
     $this->addToChunk($move, $chunk);
+  }
+
+  public function __toString() {
+    return "(ascending)";
   }
 }
 
 class Random extends Strategy {
-  public function getChunk() {
+  public function getChunk($move) {
     $len = count($this->chunks);
     return $this->chunks[rand()%$len];
   }
@@ -140,26 +145,75 @@ class Random extends Strategy {
     $chunk = $this->chunks[rand(0, $numChunks-1)];
     $this->addToChunk($move, $chunk);
   }
+
+  public function __toString() {
+    return "(random)";
+  }
 }
 
 class CoarseAscendingCombo extends Strategy {
-  public function getChunk() {
+  public function __construct() {
+    parent::__construct();
+    
+    $this->chunks[0]->min = "000000 000000";
+    // allows 1,000,000 moves
+    $this->chunks[0]->max = "999999 999999";
+  }
+  
+  public function getChunk($move) {
+    $possible = array();
+    
     foreach ($this->chunks as $chunk) {
-      if ($chunk['deck'] == $deck &&
-          $chunk['suit'] == $suit &&
-          rand() % $this->chunksInSuit[$suit] == 0) {
-        return $chunk;
+      if ($chunk->min <= $move && $chunk->max >= $move) {
+        $possible[] = $chunk;
       }
     }
+
+    return $this->chunks[rand(0, count($possible)-1)];
   }
-  public function addCard($move) {}
+  
+  public function addCard($move) {    
+    $chunk = $this->getChunk($move);
+    $this->addToChunk($move, $chunk);
+  }
+
+  protected function addToChunk($move, $chunk) {
+    $card = new Card($move);
+    
+    if (count($chunk->cards) < 4) {
+      $chunk->cards[] = $card;
+    }
+    else {
+      // TODO: should be a 50/50 chance of ending up in the new chunk
+      $newChunk = new Chunk($chunk->player);
+      $newChunk->setCards(array_slice($chunk->cards, 2, 2));
+      $newChunk->cards[] = $card;
+      $newChunk->min = CoarseAscendingCombo::getOrderingStr($newChunk->cards[0]);
+      $newChunk->max = $chunk->max;
+      
+      $chunk->setCards(array_slice($chunk->cards, 0, 2));
+      // keep min
+      $chunk->max = CoarseAscendingCombo::getOrderingStr($chunk->cards[1]);
+      
+      $this->chunks[] = $newChunk;
+      
+      $this->rebalance();
+    }
+  }
+
+  private static function getOrderingStr($card) {
+    return str_pad($card->getDeck(), 6, "0", STR_PAD_LEFT)
+      ." ".str_pad($card->getSuit(), 6, "0", STR_PAD_LEFT);
+  }
+
+  public function __toString() {
+    return "(coarse-grained ascending, random)";
+  }
 }
 
 function drawCard($card) {
   $cardNum = $card->getSuit()*13+$card->getCard();
-  if ($cardNum < 10) {
-    $cardNum = "0$cardNum";
-  }
+  $cardNum = str_pad($cardNum, 2, "0", STR_PAD_LEFT);
   echo "<img src='images/cards/c_$cardNum.png'/>";
 }
 
@@ -175,6 +229,7 @@ function drawTable($chunks) {
   // this is memory-inefficient, but chunks are stored by range and displayed
   // by player.
   global $numPlayers;
+
   
   $player = array();
   for ($i=0; $i<$numPlayers; $i++) {
