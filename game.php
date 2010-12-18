@@ -34,10 +34,7 @@ class Strategy {
     // migrate if imbalanced
     if (Chunk::$countPerPlayer[$min]+1 < Chunk::$countPerPlayer[$max]) {
       foreach ($this->chunks as $chunk) {
-        //      for ($i=0; $i<$this->chunks; $i++) {
         if ($chunk->player == $max) {
-        //        if ($this->chunks[$i]->player == $max) {
-          //          $this->chunks[$i]->player = $min;
           $chunk->player = $min;
           Chunk::$countPerPlayer[$max]--;
           Chunk::$countPerPlayer[$min]++;
@@ -143,7 +140,10 @@ class Ascending extends Strategy {
     else {
       $newChunk = new Chunk($chunk->player);
       $newChunk->setCards(array_slice($chunk->cards, 0, 2));
+      $newChunk->cards[] = $card;
+      
       $chunk->setCards(array_slice($chunk->cards, 2));
+      
       $this->chunks[] = $newChunk;
       
       $this->rebalance();
@@ -183,8 +183,6 @@ function drawCards($cards) {
 }
 
 function drawTable($chunks) {
-  var_dump($chunks);
-  
   // this is memory-inefficient, but chunks are stored by range and displayed
   // by player.
   global $numPlayers;
