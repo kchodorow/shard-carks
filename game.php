@@ -46,47 +46,22 @@ class Strategy {
 }
 
 class Card {
-  private $deck;
-  private $suit;
-  private $card;
+  private $move;
 
   public function __construct($move) {
-    $this->deck = Card::getDeck($move);
-    $this->suit = Card::getSuit($move);
-    $this->card = Card::getCard($move);
+    $this->move = $move;
   }
 
-  public function __toString() {
-    $str = $this->deck." ";
-    switch ($this->suit) {
-    case 0:
-      $str .= "spades ";
-      break;
-    case 1:
-      $str .= "hearts ";
-      break;
-    case 2:
-      $str .= "diamonds ";
-      break;
-    case 3:
-      $str .= "clubs ";
-      break;
-    }
-    
-    $str .= $this->card;
-    return $str;
+  public function getDeck() {
+    return (int)($this->move / 52) + 1;
   }
   
-  public static function getDeck($move) {
-    return (int)($move / 52) + 1;
-  }
-  
-  public static function getSuit($move) {
-    return (int)($move / 13) % 4;
+  public function getSuit() {
+    return (int)($this->move / 13) % 4;
   }
 
-  public static function getCard($move) {
-    return $move % 13;
+  public function getCard() {
+    return $this->move % 13;
   }
 
 }
@@ -171,7 +146,11 @@ class CoarseAscendingCombo extends Strategy {
 }
 
 function drawCard($card) {
-  echo " $card ";
+  $cardNum = $card->getSuit()*13+$card->getCard();
+  if ($cardNum < 10) {
+    $cardNum = "0$cardNum";
+  }
+  echo "<img src='images/cards/c_$cardNum.png'/>";
 }
 
 function drawCards($cards) {

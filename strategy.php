@@ -38,16 +38,9 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
 <html>
  <title>Sharding Game</title>
  <body>
-  <h2>Step <?php echo "$move"; ?></h2>
-
   <form method="post">
-   <input type="hidden" name="move" value="<?php echo '$move'; ?>"/>
    <input type="submit" value="Next Move"/>
   </form>
-
-  <div>
-   Dealer
-  </div>
 
   <table>
    <tr>
