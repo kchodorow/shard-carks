@@ -4,7 +4,7 @@ require_once("game.php");
 
 session_start();
 
-if (isset($_POST['action']) && $_POST['action'] == 'reset') {
+if (isset($_POST['action']) && $_POST['action'] == 'Go') {
   unset($_SESSION['move']);
   unset($_SESSION['strategy']);
   unset($_SESSION['chunkCounts']);
@@ -19,7 +19,15 @@ if (!isset($_SESSION['move'])) {
   $_SESSION['move'] = $move;
 }
 if (!isset($_SESSION['strategy'])) {
-  $_SESSION['strategy'] = new Ascending();
+  if (!isset($_POST['strategy']) || $_POST['strategy'] == "asc") {
+    $_SESSION['strategy'] = new Ascending();
+  }
+  else if ($_GET['strategy'] == "rand") {
+    $_SESSION['strategy'] = new Random();
+  }
+  else if ($_GET['strategy'] == "combo") {
+    $_SESSION['strategy'] = new CoarseAscendingCombo();
+  }
 }
 
 $move = $_SESSION['move'];
@@ -57,7 +65,11 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
   </table>
 
   <form method="post">
-   <input type="submit" name="action" value="reset"/>
+   Or start a new game:
+   <input type="radio" name="strategy" value="asc"/>Ascending
+   <input type="radio" name="strategy" value="rand"/>Random
+   <input type="radio" name="strategy" value="combo"/>Combo
+   <input type="submit" name="action" value="Go"/>
   </form>
   
  </body>

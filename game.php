@@ -2,7 +2,7 @@
 
 $numPlayers = 4;
   
-class Strategy {
+abstract class Strategy {
   public $players;
 
   /**
@@ -13,7 +13,8 @@ class Strategy {
   public function __construct() {
     $this->chunks = array(new Chunk(0));
   }
-  
+
+  // TODO: this would look nicer if new shard was random, not sequential
   public function rebalance() {
     // check for min/max
     $min = -1;
@@ -43,6 +44,28 @@ class Strategy {
       }
     }
   }
+
+  protected function addToChunk($move, $chunk) {
+    $card = new Card($move);
+    
+    if (count($chunk->cards) < 4) {
+      $chunk->cards[] = $card;
+    }
+    else {
+      $newChunk = new Chunk($chunk->player);
+      $newChunk->setCards(array_slice($chunk->cards, 0, 2));
+      $newChunk->cards[] = $card;
+      
+      $chunk->setCards(array_slice($chunk->cards, 2));
+      
+      $this->chunks[] = $newChunk;
+      
+      $this->rebalance();
+    }
+  }
+
+  abstract public function getChunk();
+  abstract public function addCard($move);
 }
 
 class Card {
@@ -100,29 +123,9 @@ class Ascending extends Strategy {
     return $this->chunks[$len-1];
   }
 
-  public function getPlayer() {
-    $chunk = getChunk();
-    return $chunk['player'];
-  }
   public function addCard($move) {
-    $card = new Card($move);
-
     $chunk = $this->getChunk();
-    
-    if (count($chunk->cards) < 4) {
-      $chunk->cards[] = $card;
-    }
-    else {
-      $newChunk = new Chunk($chunk->player);
-      $newChunk->setCards(array_slice($chunk->cards, 0, 2));
-      $newChunk->cards[] = $card;
-      
-      $chunk->setCards(array_slice($chunk->cards, 2));
-      
-      $this->chunks[] = $newChunk;
-      
-      $this->rebalance();
-    }
+    $this->addToChunk($move, $chunk);
   }
 }
 
@@ -131,10 +134,16 @@ class Random extends Strategy {
     $len = count($this->chunks);
     return $this->chunks[rand()%$len];
   }
+
+  public function addCard($move) {
+    $numChunks = count($this->chunks);
+    $chunk = $this->chunks[rand(0, $numChunks-1)];
+    $this->addToChunk($move, $chunk);
+  }
 }
 
 class CoarseAscendingCombo extends Strategy {
-  public function getChunk($deck, $suit, $card) {
+  public function getChunk() {
     foreach ($this->chunks as $chunk) {
       if ($chunk['deck'] == $deck &&
           $chunk['suit'] == $suit &&
@@ -143,6 +152,7 @@ class CoarseAscendingCombo extends Strategy {
       }
     }
   }
+  public function addCard($move) {}
 }
 
 function drawCard($card) {
