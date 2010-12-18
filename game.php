@@ -16,16 +16,12 @@ abstract class Strategy {
 
   // TODO: this would look nicer if new shard was random, not sequential
   public function rebalance() {
-    // check for min/max
-    $min = -1;
-    $minVal = 0;
+    global $numPlayers;
+    
+    // check for max
     $max = 0;
     $maxVal = -1;
     foreach (Chunk::$countPerPlayer as $player => $count) {
-      if ($min == -1 || $count < $minVal) {
-        $min = $player;
-        $minVal = $count;
-      }
       if ($count > $maxVal) {
         $max = $player;
         $maxVal = $count;
@@ -33,13 +29,18 @@ abstract class Strategy {
     }
 
     // migrate if imbalanced
-    if (Chunk::$countPerPlayer[$min]+1 < Chunk::$countPerPlayer[$max]) {
-      foreach ($this->chunks as $chunk) {
-        if ($chunk->player == $max) {
-          $chunk->player = $min;
-          Chunk::$countPerPlayer[$max]--;
-          Chunk::$countPerPlayer[$min]++;
-          return;
+    for ($i=0; $i<10; $i++) {
+      // crappiest balancer ever
+      $min = rand(0,$numPlayers-1);
+      
+      if (Chunk::$countPerPlayer[$min]+1 < Chunk::$countPerPlayer[$max]) {
+        foreach ($this->chunks as $chunk) {
+          if ($chunk->player == $max) {
+            $chunk->player = $min;
+            Chunk::$countPerPlayer[$max]--;
+            Chunk::$countPerPlayer[$min]++;
+            return;
+          }
         }
       }
     }
@@ -250,6 +251,7 @@ function drawTable($chunks) {
     for ($i=0; $i<4; $i++) {
       
       if (!isset($player[$i][$count])) {
+        echo "<td></td>";
         continue;
       }
 
