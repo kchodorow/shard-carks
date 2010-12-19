@@ -44,7 +44,10 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
 ?>
 
 <html>
- <title>Sharding Game</title>
+ <head>
+  <title>Sharding Game</title>
+  <link href="css/game.css" rel="stylesheet" type="text/css"/>
+ </head>
  <body>
   <h2>Current strategy: <?php echo $strategy->__toString(); ?></h2>
   <form method="get">
@@ -54,12 +57,16 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
 <?php
   if ($move >= 0) {
 ?>
-<p>Dealer deals a <?php drawCard(new Card($move)); ?></p>
+<div class="dealer">Dealer deals a <?php drawCard(new Card($move)); ?></div>
 <?php
   }
 ?>
   
-  <table>
+  <table class="players">
+   <col width="144"/>
+   <col width="144"/>
+   <col width="144"/>
+   <col width="144"/>
    <tr>
     <th>Player 1</th>
     <th>Player 2</th>
