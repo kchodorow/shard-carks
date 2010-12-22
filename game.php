@@ -79,17 +79,41 @@ class Card {
   }
   
   public function getSuit() {
-    return (int)($this->move / 13) % 4;
+    $suitNum = (int)($this->move / 13) % 4;
+    switch ($suitNum) {
+    case 0:
+      return "&spades;";
+    case 1:
+      return "&hearts;";
+    case 2:
+      return "&diams;";
+    case 3:
+      return "&clubs;";
+    }
   }
 
   public function getCard() {
-    return $this->move % 13;
+    $cardNum = $this->move % 13;
+    switch ($cardNum) {
+    case 9:
+      return "Jack";
+    case 10:
+      return "Queen";
+    case 11:
+      return "King";
+    case 12:
+      return "Ace";
+    default:
+      return $cardNum+2;
+    }
   }
   
   public function draw() {
-    $cardNum = $this->getSuit()*13+$this->getCard();
-    $cardNum = str_pad($cardNum, 2, "0", STR_PAD_LEFT);
-    echo "<img src='images/cards/c_$cardNum.png'/>";
+    echo "<div><code><div>{</div><div class=\"field\">\"criteria\" : ".json_encode($this->criteria).
+      ", </div><div class=\"field\">\"deck\" : ".$this->getDeck().
+      ", </div><div class=\"field\">\"suit\" : \"".$this->getSuit().
+      "\", </div><div class=\"field\">\"card\" : \"".$this->getCard().
+      "\"</div><div>}</div></code></div>";
   }
 }
 
@@ -152,7 +176,7 @@ class Chunk {
   }
 
   public function draw() {
-    echo "<td><div>".$this->min." &rarr; ".$this->max."</div>";
+    echo "<td><div class=\"chunkRange\"><b>".$this->min." &rarr; ".$this->max."</b></div>";
     foreach ($this->cards as $card) {
       $card->draw();
     }
@@ -164,8 +188,8 @@ class Ascending extends Strategy {
   public function __construct() {
     parent::__construct();
     
-    $this->chunks[0]->min = "000000";
-    $this->chunks[0]->max = "999999";
+    $this->chunks[0]->min = 0;
+    $this->chunks[0]->max = 999999;
   }
   
   public function addCard($move) {
@@ -189,13 +213,13 @@ class Random extends Strategy {
   public function __construct() {
     parent::__construct();
     
-    $this->chunks[0]->min = "000000";
-    $this->chunks[0]->max = "999999";
+    $this->chunks[0]->min = 0;
+    $this->chunks[0]->max = 999999;
   }
 
   public function addCard($move) {
     $card = new Card($move);
-    $card->criteria = str_pad(rand(0, 999999), 6, "0", STR_PAD_LEFT);
+    $card->criteria = rand(0, 999999);
 
     $chunk = $this->getChunk($card);
     $chunk->add($card);
@@ -232,7 +256,7 @@ class CoarseAscendingCombo extends Strategy {
   }
 
   public function __toString() {
-    return "(coarse-grained ascending, random)";
+    return "Coarse-grained ascending + random";
   }
 }
 

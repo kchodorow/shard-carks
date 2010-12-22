@@ -3,24 +3,7 @@
 require_once("game.php");
 
 session_start();
-?>
 
-<html>
- <head>
-  <title>TrySharding - MongoDB Sharding Game</title>
-  <link href="css/game.css" rel="stylesheet" type="text/css"/>
- </head>
- <body>
-
-  <form method="post">
-   Or start a new game:
-   <input type="radio" name="strategy" value="asc"/>Ascending
-   <input type="radio" name="strategy" value="rand"/>Random
-   <input type="radio" name="strategy" value="combo"/>Combo
-   <input type="submit" name="action" value="Go"/>
-  </form>
-
-<?php
 if (isset($_POST['action']) && $_POST['action'] == 'Go') {
   unset($_SESSION['move']);
   unset($_SESSION['strategy']);
@@ -59,27 +42,43 @@ $_SESSION['move']++;
 $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
 
 ?>
+<html>
+ <head>
+  <title>TrySharding - MongoDB Sharding Game</title>
+  <link href="css/game.css" rel="stylesheet" type="text/css"/>
+ </head>
+ <body>
 
-  <h2>Current strategy: <?php echo $strategy->__toString(); ?></h2>
-  <form method="get">
-   <input type="submit" value="Next Move"/>
-  </form>
-
-<div>
+  <div class="dealer">
   
 <?php
   if ($move >= 0) {
-?>
-<div class="dealer"><div>Dealer deals a <?php echo $card->criteria."</div>"; $card->draw(); ?></div>
-<?php
+    echo "To deal the next card, click on";
+  }
+  else {
+    echo "To begin, click on";
   }
 ?>
-  
+
+   <form method="get">
+    <input type="submit" value="Next Move"/>
+   </form>
+   <form method="post">
+    Or use a different strategy:
+    <input <?php if ($strategy instanceof Ascending) { echo "checked"; } ?> type="radio" name="strategy" value="asc"/>Ascending
+    <input <?php if ($strategy instanceof Random) { echo "checked"; } ?> type="radio" name="strategy" value="rand"/>Random
+    <input <?php if ($strategy instanceof CoarseAscendingCombo) { echo "checked"; } ?> type="radio" name="strategy" value="combo"/>Combo
+    <input type="submit" name="action" value="Go"/>
+   </form>
+  </div>
+
+<?php if ($move >= 0) { ?>
+   <div align="center" style="text-align: left;">
+    Dealer deals a <?php $card->draw(); ?>
+   </div>
+<?php } ?>
+
   <table class="players">
-   <col width="144"/>
-   <col width="144"/>
-   <col width="144"/>
-   <col width="144"/>
    <tr>
     <th>Player 1</th>
     <th>Player 2</th>
