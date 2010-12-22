@@ -14,7 +14,16 @@ abstract class Strategy {
     $this->chunks = array(new Chunk(0));
   }
 
-  // TODO: this would look nicer if new shard was random, not sequential
+  public function getChunk($card) {
+    foreach ($this->chunks as $chunk) {
+      if ($chunk->min <= $card->criteria && $chunk->max > $card->criteria) {
+        return $chunk;
+      }
+    }
+
+    throw new Exception("Couldn't find a chunk for ".$card->criteria.", shouldn't happen");
+  }
+
   public function rebalance() {
     global $numPlayers;
     
@@ -33,7 +42,7 @@ abstract class Strategy {
       // crappiest balancer ever
       $min = rand(0,$numPlayers-1);
       
-      if (Chunk::$countPerPlayer[$min]+1 < Chunk::$countPerPlayer[$max]) {
+      if (Chunk::$countPerPlayer[$min] < Chunk::$countPerPlayer[$max]) {
         foreach ($this->chunks as $chunk) {
           if ($chunk->player == $max) {
             $chunk->player = $min;
@@ -46,33 +55,21 @@ abstract class Strategy {
     }
   }
 
-  protected function addToChunk($move, $chunk) {
-    $card = new Card($move);
-    
-    if (count($chunk->cards) < 4) {
-      $chunk->cards[] = $card;
-    }
-    else {
-      $newChunk = new Chunk($chunk->player);
-      $newChunk->setCards(array_slice($chunk->cards, 0, 2));
-      $newChunk->cards[] = $card;
-      
-      $chunk->setCards(array_slice($chunk->cards, 2));
-      
-      $this->chunks[] = $newChunk;
-      
+  protected function checkBalance($chunk) {    
+    if (count($chunk->cards) >= 4) {
+      $this->chunks[] = $chunk->split();      
       $this->rebalance();
     }
   }
 
-  abstract public function getChunk($move);
   abstract public function addCard($move);
   abstract public function __toString();
 }
 
 class Card {
   private $move;
-
+  public $criteria;
+  
   public function __construct($move) {
     $this->move = $move;
   }
@@ -88,7 +85,12 @@ class Card {
   public function getCard() {
     return $this->move % 13;
   }
-
+  
+  public function draw() {
+    $cardNum = $this->getSuit()*13+$this->getCard();
+    $cardNum = str_pad($cardNum, 2, "0", STR_PAD_LEFT);
+    echo "<img src='images/cards/c_$cardNum.png'/>";
+  }
 }
 
 class Chunk {
@@ -96,12 +98,14 @@ class Chunk {
 
   // integer, 0 --> num players-1
   public $player;
-  
   public $cards;
+  public $min;
+  public $max;
   
   public function __construct($player) {
     $this->player = $player;
-
+    $this->cards = array();
+    
     Chunk::$countPerPlayer[$player]++;
   }
   
@@ -116,18 +120,64 @@ class Chunk {
       Chunk::$countPerPlayer[$i] = 0;
     }
   }
+
+  public function add($card) {
+    for ($i=0; $i<count($this->cards); $i++) {
+      if ($this->cards[$i]->criteria >= $card->criteria) {
+        array_splice($this->cards, $i, 0, array($card));
+        return;
+      }
+    }
+    $this->cards[] = $card;
+  }
+  
+  public function split() {
+    $newChunk = new Chunk($this->player);
+    
+    $middle = (int)(count($this->cards)/2);
+
+    // middle to eo array
+    $newChunk->setCards(array_slice($this->cards, $middle));
+    
+    $newChunk->min = $newChunk->cards[0]->criteria;
+    $newChunk->max = $this->max;
+
+    // beginning to middle of array
+    $this->setCards(array_slice($this->cards, 0, $middle));
+    
+    // keep min
+    $this->max = $newChunk->cards[0]->criteria;
+
+    return $newChunk;
+  }
+
+  public function draw() {
+    echo "<td><div>".$this->min." &rarr; ".$this->max."</div>";
+    foreach ($this->cards as $card) {
+      $card->draw();
+    }
+    echo "</td>";
+  }
 }
 
 class Ascending extends Strategy {
-  
-  public function getChunk($move) {
-    $len = count($this->chunks);
-    return $this->chunks[$len-1];
+  public function __construct() {
+    parent::__construct();
+    
+    $this->chunks[0]->min = "000000";
+    $this->chunks[0]->max = "999999";
   }
-
+  
   public function addCard($move) {
-    $chunk = $this->getChunk($move);
-    $this->addToChunk($move, $chunk);
+    $card = new Card($move);
+    $card->criteria = $move;
+    
+    $chunk = $this->getChunk($card);
+    $chunk->add($card);
+
+    $this->checkBalance($chunk);
+    
+    return $card;
   }
 
   public function __toString() {
@@ -136,15 +186,23 @@ class Ascending extends Strategy {
 }
 
 class Random extends Strategy {
-  public function getChunk($move) {
-    $len = count($this->chunks);
-    return $this->chunks[rand()%$len];
+  public function __construct() {
+    parent::__construct();
+    
+    $this->chunks[0]->min = "000000";
+    $this->chunks[0]->max = "999999";
   }
 
   public function addCard($move) {
-    $numChunks = count($this->chunks);
-    $chunk = $this->chunks[rand(0, $numChunks-1)];
-    $this->addToChunk($move, $chunk);
+    $card = new Card($move);
+    $card->criteria = str_pad(rand(0, 999999), 6, "0", STR_PAD_LEFT);
+
+    $chunk = $this->getChunk($card);
+    $chunk->add($card);
+
+    $this->checkBalance($chunk);
+
+    return $card;
   }
 
   public function __toString() {
@@ -157,54 +215,20 @@ class CoarseAscendingCombo extends Strategy {
     parent::__construct();
     
     $this->chunks[0]->min = "000000 000000";
-    // allows 1,000,000 moves
     $this->chunks[0]->max = "999999 999999";
   }
-  
-  public function getChunk($move) {
-    $possible = array();
     
-    foreach ($this->chunks as $chunk) {
-      if ($chunk->min <= $move && $chunk->max >= $move) {
-        $possible[] = $chunk;
-      }
-    }
-
-    return $this->chunks[rand(0, count($possible)-1)];
-  }
-  
-  public function addCard($move) {    
-    $chunk = $this->getChunk($move);
-    $this->addToChunk($move, $chunk);
-  }
-
-  protected function addToChunk($move, $chunk) {
+  public function addCard($move) {
     $card = new Card($move);
-    
-    if (count($chunk->cards) < 4) {
-      $chunk->cards[] = $card;
-    }
-    else {
-      // TODO: should be a 50/50 chance of ending up in the new chunk
-      $newChunk = new Chunk($chunk->player);
-      $newChunk->setCards(array_slice($chunk->cards, 2, 2));
-      $newChunk->cards[] = $card;
-      $newChunk->min = CoarseAscendingCombo::getOrderingStr($newChunk->cards[0]);
-      $newChunk->max = $chunk->max;
-      
-      $chunk->setCards(array_slice($chunk->cards, 0, 2));
-      // keep min
-      $chunk->max = CoarseAscendingCombo::getOrderingStr($chunk->cards[1]);
-      
-      $this->chunks[] = $newChunk;
-      
-      $this->rebalance();
-    }
-  }
+    $card->criteria = str_pad($card->getDeck(), 6, "0", STR_PAD_LEFT)
+      ." ".str_pad(rand(0, 999999), 6, "0", STR_PAD_LEFT);
 
-  private static function getOrderingStr($card) {
-    return str_pad($card->getDeck(), 6, "0", STR_PAD_LEFT)
-      ." ".str_pad($card->getSuit(), 6, "0", STR_PAD_LEFT);
+    $chunk = $this->getChunk($card);
+    $chunk->add($card);    
+
+    $this->checkBalance($chunk);
+
+    return $card;
   }
 
   public function __toString() {
@@ -212,33 +236,19 @@ class CoarseAscendingCombo extends Strategy {
   }
 }
 
-function drawCard($card) {
-  $cardNum = $card->getSuit()*13+$card->getCard();
-  $cardNum = str_pad($cardNum, 2, "0", STR_PAD_LEFT);
-  echo "<img src='images/cards/c_$cardNum.png'/>";
-}
-
-function drawCards($cards) {
-  echo "<td>";
-  foreach ($cards as $card) {
-    drawCard($card);
-  }
-  echo "</td>";
-}
 
 function drawTable($chunks) {
   // this is memory-inefficient, but chunks are stored by range and displayed
   // by player.
   global $numPlayers;
 
-  
   $player = array();
   for ($i=0; $i<$numPlayers; $i++) {
     $player[] = array();
   }
   
   foreach ($chunks as $chunk) {
-    $player[$chunk->player][] = $chunk->cards;
+    $player[$chunk->player][] = $chunk;
   }
 
   $more = 4;
@@ -256,7 +266,7 @@ function drawTable($chunks) {
       }
 
       $more++;
-      drawCards($player[$i][$count]);
+      $player[$i][$count]->draw();
     }
 
     echo "</tr>";

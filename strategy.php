@@ -3,7 +3,24 @@
 require_once("game.php");
 
 session_start();
+?>
 
+<html>
+ <head>
+  <title>TrySharding - MongoDB Sharding Game</title>
+  <link href="css/game.css" rel="stylesheet" type="text/css"/>
+ </head>
+ <body>
+
+  <form method="post">
+   Or start a new game:
+   <input type="radio" name="strategy" value="asc"/>Ascending
+   <input type="radio" name="strategy" value="rand"/>Random
+   <input type="radio" name="strategy" value="combo"/>Combo
+   <input type="submit" name="action" value="Go"/>
+  </form>
+
+<?php
 if (isset($_POST['action']) && $_POST['action'] == 'Go') {
   unset($_SESSION['move']);
   unset($_SESSION['strategy']);
@@ -35,7 +52,7 @@ $strategy = $_SESSION['strategy'];
 Chunk::$countPerPlayer = $_SESSION['chunkCounts'];
 
 if ($move >= 0) {
-  $strategy->addCard($move);
+  $card = $strategy->addCard($move);
 }
 
 $_SESSION['move']++;
@@ -43,21 +60,17 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
 
 ?>
 
-<html>
- <head>
-  <title>Sharding Game</title>
-  <link href="css/game.css" rel="stylesheet" type="text/css"/>
- </head>
- <body>
   <h2>Current strategy: <?php echo $strategy->__toString(); ?></h2>
   <form method="get">
    <input type="submit" value="Next Move"/>
   </form>
 
+<div>
+  
 <?php
   if ($move >= 0) {
 ?>
-<div class="dealer">Dealer deals a <?php drawCard(new Card($move)); ?></div>
+<div class="dealer"><div>Dealer deals a <?php echo $card->criteria."</div>"; $card->draw(); ?></div>
 <?php
   }
 ?>
@@ -79,15 +92,7 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
 ?>
   
   </table>
-
-  <form method="post">
-   Or start a new game:
-   <input type="radio" name="strategy" value="asc"/>Ascending
-   <input type="radio" name="strategy" value="rand"/>Random
-   <input type="radio" name="strategy" value="combo"/>Combo
-   <input type="submit" name="action" value="Go"/>
-  </form>
-  
+  </div>
  </body>
 </html>
 
