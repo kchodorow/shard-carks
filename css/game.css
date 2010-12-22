@@ -1,0 +1,14 @@
+table.players { 
+  table-layout: fixed;
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+div.dealer { 
+  padding-bottom: 20px;
+}
+
+div.field { 
+  padding-left: 10px;
+}

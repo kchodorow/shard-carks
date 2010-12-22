@@ -49,7 +49,7 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
  </head>
  <body>
 
-  <div class="dealer">
+  <center>
   
 <?php
   if ($move >= 0) {
@@ -70,11 +70,11 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
     <input <?php if ($strategy instanceof CoarseAscendingCombo) { echo "checked"; } ?> type="radio" name="strategy" value="combo"/>Combo
     <input type="submit" name="action" value="Go"/>
    </form>
-  </div>
+  </center>
 
 <?php if ($move >= 0) { ?>
-   <div align="center" style="text-align: left;">
-    Dealer deals a <?php $card->draw(); ?>
+   <div class="dealer">
+    <b>Dealer deals a </b><?php $card->draw(); ?>
    </div>
 <?php } ?>
 
