@@ -44,7 +44,7 @@ $_SESSION['chunkCounts'] = Chunk::$countPerPlayer;
 ?>
 <html>
  <head>
-  <title>TrySharding - MongoDB Sharding Game</title>
+  <title>Shard Carks - A MongoDB Sharding Game</title>
   <link href="css/game.css" rel="stylesheet" type="text/css"/>
  </head>
  <body>
